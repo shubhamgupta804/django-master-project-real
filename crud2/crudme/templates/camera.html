@@ -178,7 +178,7 @@ formData.append("image",blob,"photo.jpg")
 formData.append("lat",lat)
 formData.append("lon",lon)
 
-fetch("/app/save-data/",{
+fetch("/save-data/",{
 method:"POST",
 body:formData
 })
